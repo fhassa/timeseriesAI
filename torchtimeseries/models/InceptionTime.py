@@ -24,7 +24,7 @@ class Inception(nn.Module):
         conv_layers = []
         kss = [ks // (2**i) for i in range(3)]
         # ensure odd kss until nn.Conv1d with padding='same' is available in pytorch 1.3
-        kss = [ksi if ksi % 2 != 0 else ksi - 1 for ksi in kss]  
+        kss = [ksi if ksi % 2 == 0 else ksi - 1 for ksi in kss]  
         for i in range(len(kss)):
             conv_layers.append(
                 nn.Conv1d(mts_feat, nb_filters, kernel_size=kss[i], padding=kss[i] // 2))
