@@ -14,7 +14,12 @@ def noop(x):
 def shortcut(c_in, c_out):
     return nn.Sequential(*[nn.Conv1d(c_in, c_out, kernel_size=1), 
                            nn.BatchNorm1d(c_out)])
-    
+
+def calculate_asym_pad(kss_i):
+    pad_left = (kss_i - 1) // 2
+    pad_right = (kss_i - 1) - pad_left
+    return (pad_left, pad_right)
+
 class Inception(nn.Module):
     def __init__(self, c_in, bottleneck=32, ks=40, nb_filters=32):
 
@@ -24,10 +29,14 @@ class Inception(nn.Module):
         conv_layers = []
         kss = [ks // (2**i) for i in range(3)]
         # ensure odd kss until nn.Conv1d with padding='same' is available in pytorch 1.3
-        kss = [ksi if ksi % 2 != 0 else ksi - 1 for ksi in kss]  
+        kss = [ksi if ksi % 2 == 0 else ksi - 1 for ksi in kss]  
+        
+        pad_asym = [calculate_asym_pad(ksi) for ksi in kss]
+        
+        
         for i in range(len(kss)):
             conv_layers.append(
-                nn.Conv1d(mts_feat, nb_filters, kernel_size=kss[i], padding=kss[i] // 2))
+                nn.Conv1d(mts_feat, nb_filters, kernel_size=kss[i], padding=pad_asym[i]))
         self.conv_layers = nn.ModuleList(conv_layers)
         self.maxpool = nn.MaxPool1d(3, stride=1, padding=1)
         self.conv = nn.Conv1d(c_in, nb_filters, kernel_size=1)
